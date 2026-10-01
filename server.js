@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const ytdl = require("youtube-dl-exec");
+const ytDlp = require("yt-dlp-exec");
 
 const app = express();
 
@@ -24,34 +24,39 @@ app.get("/video-info", async (req, res) => {
       });
     }
 
-    const info = await ytdl(url, {
+    const info = await ytDlp(url, {
       dumpSingleJson: true,
       noWarnings: true,
-      noCheckCertificates: true
+      noCheckCertificates: true,
+      preferFreeFormats: true
     });
 
-    let videoUrl = "";
+    let videoUrl = null;
 
     if (info.url) {
       videoUrl = info.url;
     } else if (info.formats && info.formats.length > 0) {
-      videoUrl = info.formats[0].url;
+      const format =
+        info.formats.find(f => f.url) ||
+        info.formats[0];
+
+      videoUrl = format.url;
     }
 
-    return res.json({
+    res.json({
       success: true,
       title: info.title || "",
       thumbnail: info.thumbnail || "",
       videoUrl: videoUrl
     });
 
-  } catch (err) {
-    console.error("FULL ERROR:", err);
+  } catch (e) {
+    console.error("FULL ERROR:", e);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      error: err?.message || String(err),
-      stack: err?.stack || null
+      error: e.message || e.toString(),
+      stack: e.stack
     });
   }
 });
