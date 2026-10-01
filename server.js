@@ -30,7 +30,7 @@ app.get("/video-info", async (req, res) => {
       noCheckCertificates: true
     });
 
-    let videoUrl = null;
+    let videoUrl = "";
 
     if (info.url) {
       videoUrl = info.url;
@@ -42,15 +42,16 @@ app.get("/video-info", async (req, res) => {
       success: true,
       title: info.title || "",
       thumbnail: info.thumbnail || "",
-      videoUrl: videoUrl || ""
+      videoUrl: videoUrl
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("FULL ERROR:", err);
 
     return res.status(500).json({
       success: false,
-      error: err.toString()
+      error: err?.message || String(err),
+      stack: err?.stack || null
     });
   }
 });
