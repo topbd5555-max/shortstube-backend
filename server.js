@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const axios = require("axios");
+const ytDlp = require("yt-dlp-exec");
 
 const app = express();
 
@@ -14,14 +14,49 @@ app.get("/", (req, res) => {
 });
 
 app.get("/video-info", async (req, res) => {
-  const url = req.query.url;
+  try {
+    const url = req.query.url;
 
-  res.json({
-    success: true,
-    url: url
-  });
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: "URL required"
+      });
+    }
+
+    const info = await ytDlp(url, {
+      dumpSingleJson: true,
+      noWarnings: true,
+      noCheckCertificates: true
+    });
+
+    let videoUrl = null;
+
+    if (info.url) {
+      videoUrl = info.url;
+    } else if (info.formats && info.formats.length > 0) {
+      videoUrl = info.formats[0].url;
+    }
+
+    res.json({
+      success: true,
+      title: info.title,
+      thumbnail: info.thumbnail,
+      videoUrl: videoUrl
+    });
+
+  } catch (e) {
+    console.error(e);
+
+    res.status(500).json({
+      success: false,
+      error: e.toString()
+    });
+  }
 });
 
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
