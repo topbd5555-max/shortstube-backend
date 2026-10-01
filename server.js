@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const ytDlp = require("yt-dlp-exec");
+const ytdl = require("youtube-dl-exec");
 
 const app = express();
 
@@ -24,7 +24,7 @@ app.get("/video-info", async (req, res) => {
       });
     }
 
-    const info = await ytDlp(url, {
+    const info = await ytdl(url, {
       dumpSingleJson: true,
       noWarnings: true,
       noCheckCertificates: true
@@ -38,19 +38,19 @@ app.get("/video-info", async (req, res) => {
       videoUrl = info.formats[0].url;
     }
 
-    res.json({
+    return res.json({
       success: true,
-      title: info.title,
-      thumbnail: info.thumbnail,
-      videoUrl: videoUrl
+      title: info.title || "",
+      thumbnail: info.thumbnail || "",
+      videoUrl: videoUrl || ""
     });
 
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    console.error(err);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: e.toString()
+      error: err.toString()
     });
   }
 });
