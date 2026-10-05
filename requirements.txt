@@ -1,0 +1,6 @@
+selenium
+webdriver-manager
+pymongo
+python-dotenv
+requests
+yt-dlp
