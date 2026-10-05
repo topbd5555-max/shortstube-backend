@@ -3,20 +3,21 @@ import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 from pymongo import MongoClient
 import yt_dlp
 import cloudinary
 import cloudinary.uploader
 
-# ১. তোমার Cloudinary ড্যাশবোর্ড থেকে এই ৩টা জিনিস কপি করে বসাও
+# ১. তোমার Cloudinary ক্রেডেনশিয়াল বসাও
 cloudinary.config(
-  cloud_name =  "pkdjkcxn",
+  cloud_name = "pkdjkcxn",
   api_key = "627556877651319",
   api_secret = "r3adZjJLaLwCcXwltLVFfBfDhfc"
 )
 
-# ২. তোমার MongoDB লিংক
+# ২. তোমার MongoDB লিংক বসাও
 MONGO_URI = "mongodb://parvez12:Pk5480000@ac-93nonf4-shard-00-00.kouagcv.mongodb.net:27017,ac-93nonf4-shard-00-01.kouagcv.mongodb.net:27017,ac-93nonf4-shard-00-02.kouagcv.mongodb.net:27017/?ssl=true&replicaSet=atlas-14ly8k-shard-0&authSource=admin&appName=Cluster0"
 client = MongoClient(MONGO_URI)
 db = client['shortstube']
@@ -39,58 +40,60 @@ def download_and_upload(video_url):
         'quiet': True
     }
     
-    print("📥 Downloading MP4 with yt-dlp...")
+    print(f"📥 Downloading: {video_url}")
     try:
-        # ভিডিও ডাউনলোড
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([video_url])
         
         print("☁️ Uploading to Cloudinary...")
-        # Cloudinary তে আপলোড
         upload_result = cloudinary.uploader.upload(temp_filename, resource_type="video")
         secure_url = upload_result.get('secure_url')
         
-        # গিটহাবের সার্ভার থেকে ডিলিট করে দেওয়া (যাতে জায়গা ফুল না হয়)
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
             
         return secure_url
     except Exception as e:
-        print(f"❌ Error in processing video: {e}")
+        print(f"❌ Error: {e}")
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
         return None
 
 def run_youtube_bot():
-    print("🚀 YouTube Cloudinary Bot Started...")
+    print("🚀 YouTube Bot Started...")
     driver = setup_driver()
     
     try:
         driver.get("https://www.youtube.com/shorts/")
         time.sleep(5)
         
-        for i in range(5): # আপাতত টেস্ট করার জন্য ৫টা
-            print(f"--- Processing Video {i+1} ---")
-            current_url = driver.current_url
+        # নির্দিষ্ট ভিডিও লিংক খুঁজে বের করার নতুন সিস্টেম
+        video_links = []
+        scrolls = 0
+        while len(video_links) < 5 and scrolls < 10:
+            elements = driver.find_elements(By.CSS_SELECTOR, "a[href*='/shorts/']")
+            for el in elements:
+                href = el.get_attribute('href')
+                if href and href != "https://www.youtube.com/shorts/" and href not in video_links:
+                    video_links.append(href)
+            driver.execute_script("window.scrollBy(0, 1000);")
+            time.sleep(2)
+            scrolls += 1
             
-            # MP4 ডাউনলোড ও Cloudinary আপলোডের ফাংশন কল করা
+        for i, current_url in enumerate(video_links[:5]):
+            print(f"--- Processing Video {i+1} ---")
             cloudinary_mp4_url = download_and_upload(current_url)
             
             if cloudinary_mp4_url:
                 video_data = {
                     "title": f"YouTube Shorts {i+1}",
                     "original_url": current_url,
-                    "video_url": cloudinary_mp4_url, # এটা হলো Cloudinary-র ডাইরেক্ট MP4 লিংক
+                    "video_url": cloudinary_mp4_url,
                     "source": "youtube"
                 }
-                
                 videos_collection.insert_one(video_data)
-                print(f"✅ Saved direct MP4 to Database: {cloudinary_mp4_url}")
-            
-            # পরের ভিডিওতে স্ক্রল করা
-            driver.execute_script("window.scrollBy(0, window.innerHeight);")
-            time.sleep(3)
-            
+                print(f"✅ Saved to DB: {cloudinary_mp4_url}")
+                
     except Exception as e:
         print(f"❌ YouTube Bot Error: {e}")
     finally:
