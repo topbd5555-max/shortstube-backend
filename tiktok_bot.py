@@ -1,23 +1,21 @@
 import os
 import time
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 from pymongo import MongoClient
-import yt_dlp
 import cloudinary
 import cloudinary.uploader
 
-# ১. তোমার Cloudinary ক্রেডেনশিয়াল বসাও
 cloudinary.config(
   cloud_name = "pkdjkcxn",
   api_key = "627556877651319",
   api_secret = "r3adZjJLaLwCcXwltLVFfBfDhfc"
 )
 
-# ২. তোমার MongoDB লিংক বসাও
 MONGO_URI = "mongodb://parvez12:Pk5480000@ac-93nonf4-shard-00-00.kouagcv.mongodb.net:27017,ac-93nonf4-shard-00-01.kouagcv.mongodb.net:27017,ac-93nonf4-shard-00-02.kouagcv.mongodb.net:27017/?ssl=true&replicaSet=atlas-14ly8k-shard-0&authSource=admin&appName=Cluster0"
 client = MongoClient(MONGO_URI)
 db = client['shortstube']
@@ -29,32 +27,38 @@ def setup_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    # টিকটকে বট ব্লক এড়ানোর জন্য ফেক ইউজার এজেন্ট
-    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
     service = Service(ChromeDriverManager().install())
     return webdriver.Chrome(service=service, options=options)
 
 def download_and_upload(video_url):
     temp_filename = "temp_tiktok.mp4"
-    ydl_opts = {
-        'outtmpl': temp_filename,
-        'format': 'best',
-        'quiet': True
-    }
+    print(f"📥 Getting video from API for: {video_url}")
     
-    print(f"📥 Downloading: {video_url}")
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([video_url])
+        # TikWM ফ্রী API দিয়ে ভিডিও লিংক বের করা
+        api_url = f"https://www.tikwm.com/api/?url={video_url}"
+        response = requests.get(api_url).json()
         
-        print("☁️ Uploading to Cloudinary...")
-        upload_result = cloudinary.uploader.upload(temp_filename, resource_type="video")
-        secure_url = upload_result.get('secure_url')
-        
-        if os.path.exists(temp_filename):
-            os.remove(temp_filename)
+        if response.get('code') == 0:
+            play_url = response['data']['play']
             
-        return secure_url
+            # API থেকে MP4 ডাউনলোড করা
+            print("⏳ Downloading MP4...")
+            vid_response = requests.get(play_url)
+            with open(temp_filename, "wb") as f:
+                f.write(vid_response.content)
+            
+            print("☁️ Uploading to Cloudinary...")
+            upload_result = cloudinary.uploader.upload(temp_filename, resource_type="video")
+            secure_url = upload_result.get('secure_url')
+            
+            os.remove(temp_filename)
+            return secure_url
+        else:
+            print("❌ API Error: Video not found.")
+            return None
+            
     except Exception as e:
         print(f"❌ Error: {e}")
         if os.path.exists(temp_filename):
@@ -62,14 +66,13 @@ def download_and_upload(video_url):
         return None
 
 def run_tiktok_bot():
-    print("🚀 TikTok Bot Started...")
+    print("🚀 TikTok API Bot Started...")
     driver = setup_driver()
     
     try:
-        driver.get("https://www.tiktok.com/explore") # Explore পেজ সেফ
+        driver.get("https://www.tiktok.com/explore")
         time.sleep(5)
         
-        # নির্দিষ্ট ভিডিও লিংক খুঁজে বের করার নতুন সিস্টেম
         video_links = []
         scrolls = 0
         while len(video_links) < 5 and scrolls < 10:

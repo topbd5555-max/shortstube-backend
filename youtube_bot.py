@@ -10,14 +10,12 @@ import yt_dlp
 import cloudinary
 import cloudinary.uploader
 
-# ১. তোমার Cloudinary ক্রেডেনশিয়াল বসাও
 cloudinary.config(
   cloud_name = "pkdjkcxn",
   api_key = "627556877651319",
   api_secret = "r3adZjJLaLwCcXwltLVFfBfDhfc"
 )
 
-# ২. তোমার MongoDB লিংক বসাও
 MONGO_URI = "mongodb://parvez12:Pk5480000@ac-93nonf4-shard-00-00.kouagcv.mongodb.net:27017,ac-93nonf4-shard-00-01.kouagcv.mongodb.net:27017,ac-93nonf4-shard-00-02.kouagcv.mongodb.net:27017/?ssl=true&replicaSet=atlas-14ly8k-shard-0&authSource=admin&appName=Cluster0"
 client = MongoClient(MONGO_URI)
 db = client['shortstube']
@@ -37,7 +35,9 @@ def download_and_upload(video_url):
     ydl_opts = {
         'outtmpl': temp_filename,
         'format': 'best',
-        'quiet': True
+        'quiet': True,
+        # ইউটিউবকে ধোঁকা দেওয়ার ম্যাজিক কোড (Android Client)
+        'extractor_args': {'youtube': {'player_client': ['android', 'web']}}
     }
     
     print(f"📥 Downloading: {video_url}")
@@ -67,7 +67,6 @@ def run_youtube_bot():
         driver.get("https://www.youtube.com/shorts/")
         time.sleep(5)
         
-        # নির্দিষ্ট ভিডিও লিংক খুঁজে বের করার নতুন সিস্টেম
         video_links = []
         scrolls = 0
         while len(video_links) < 5 and scrolls < 10:
