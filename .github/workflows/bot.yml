@@ -2,7 +2,7 @@ name: ShortsTube Auto Scraper Bots
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # প্রতি ৬ ঘণ্টা পর পর অটোমেটিক চলবে
+    - cron: '0 */2 * * *' # প্রতি 2 ঘণ্টা পর পর অটোমেটিক চলবে
   workflow_dispatch: # তুমি চাইলে গিটহাব থেকে যেকোনো সময় ম্যানুয়ালি স্টার্ট করতে পারবে
 
 jobs:

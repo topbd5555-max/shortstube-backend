@@ -11,7 +11,7 @@ import cloudinary.uploader
 
 # ১. তোমার Cloudinary ড্যাশবোর্ড থেকে এই ৩টা জিনিস কপি করে বসাও
 cloudinary.config(
-  cloud_name = " pkdjkcxn",
+  cloud_name = "pkdjkcxn",
   api_key = "627556877651319",
   api_secret = "r3adZjJLaLwCcXwltLVFfBfDhfc"
 )
