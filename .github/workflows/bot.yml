@@ -1,0 +1,29 @@
+name: ShortsTube Auto Scraper Bots
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # প্রতি ৬ ঘণ্টা পর পর অটোমেটিক চলবে
+  workflow_dispatch: # তুমি চাইলে গিটহাব থেকে যেকোনো সময় ম্যানুয়ালি স্টার্ট করতে পারবে
+
+jobs:
+  scrape-videos:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run YouTube Bot
+        run: python youtube_bot.py
+
+      - name: Run TikTok Bot
+        run: python tiktok_bot.py
